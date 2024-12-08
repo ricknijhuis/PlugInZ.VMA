@@ -15,10 +15,14 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const vulkan_headers = b.dependency("vulkan_headers", .{}).path("include");
     const module = b.addModule("root", .{
         .root_source_file = b.path("src/root.zig"),
     });
 
+    module.link_libc = true;
+    module.link_libcpp = true;
+    module.addIncludePath(vulkan_headers);
     module.addIncludePath(b.path("libs/vma/include"));
 
     const vma = b.addStaticLibrary(.{
@@ -35,8 +39,10 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     b.installArtifact(vma);
 
+    vma.addIncludePath(vulkan_headers);
     vma.addIncludePath(b.path("libs/vma/include"));
     vma.linkLibC();
+    vma.linkLibCpp();
 
     const src_dir = "libs/vma/src/";
     vma.addCSourceFile(.{ .file = b.path(src_dir ++ "vk_mem_alloc.cpp"), .flags = &.{""} });
